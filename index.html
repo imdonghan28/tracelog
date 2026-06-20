@@ -57,15 +57,14 @@
                         const itemDiv = document.createElement('div');
                         itemDiv.className = "w-full";
 
-                        // HTML 템플릿 태그 안의 공백을 제거하고 왼쪽 정렬을 강화했습니다.
-                        // 이모지를 ❓ -> ⭕ (Q), 🤖 -> 🅰️ (A) 스타일로 변경했습니다.
+                        // 🅠와 🅐 이모지를 적용하고 앞뒤 공백을 완벽히 제거했습니다.
                         itemDiv.innerHTML = `
                             <div class="w-full bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
                                 <div class="flex items-start justify-between space-x-4 mb-2">
-                                    <div class="font-bold text-slate-900 text-base text-left" style="word-break: break-all; flex: 1;">⭕ ${escapeHtml(log.question).trim()}</div>
+                                    <div class="font-bold text-slate-900 text-base text-left" style="word-break: break-all; flex: 1;">🅠 ${escapeHtml(log.question).trim()}</div>
                                     <time class="text-xs font-medium text-indigo-500 shrink-0 pt-1">${log.time || ''}</time>
                                 </div>
-                                <div class="text-slate-600 text-sm mt-3 pt-3 border-t border-dashed border-slate-100 text-left" style="white-space: pre-wrap; word-break: break-all;">🅰️ ${escapeHtml(log.answer).trim()}</div>
+                                <div class="text-slate-600 text-sm mt-3 pt-3 border-t border-dashed border-slate-100 text-left" style="white-space: pre-wrap; word-break: break-all;">🅐 ${escapeHtml(log.answer).trim()}</div>
                             </div>
                         `;
 
@@ -101,4 +100,3 @@
 </script>
 </body>
 </html>
-"무의미한 주석"
