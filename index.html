@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <title>TraceLog 실시간 타임라인</title>
+</head>
+<body class="min-h-screen" style="background: #edf2f7;">
+    <section class="relative min-h-screen flex flex-col bg-slate-50">
+        <div class="w-full max-w-6xl mx-auto px-4 md:px-6 py-24">
+            <div class="flex flex-col justify-center divide-y divide-slate-200 [&>*]:py-16">
+                <div class="w-full max-w-3xl mx-auto">
+                    <div id="timelineContainer" class="space-y-8 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-slate-300 before:to-transparent">
+                        
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+<script>
+    // 우리 팀의 파이어베이스 서버 주소
+    const firebaseDatabaseURL = "https://hackerthon-96e47-default-rtdb.firebaseio.com/logs.json";
+    const container = document.getElementById('timelineContainer');
+
+    // 🚀 가장 안전하고 확실하게 파이어베이스 데이터를 실시간으로 가져오는 엔진
+    function loadTimelineData() {
+        fetch(firebaseDatabaseURL)
+            .then(res => res.json())
+            .then(data => {
+                if (!data) {
+                    container.innerHTML = '<p style="text-align:center; color:#9ca3af; padding: 20px;">아직 세이브된 대화가 없습니다.</p>';
+                    return;
+                }
+
+                // 화면을 한 번 비우고 정렬 시작
+                container.innerHTML = '';
+
+                let index = 0;
+                // 파이어베이스 내부 데이터를 뽑아 화면에 카드 배치
+                for (const key in data) {
+                    if (data.hasOwnProperty(key)) {
+                        const log = data[key];
+                        const itemDiv = document.createElement('div');
+                        
+                        // 홀수/짝수 줄 좌우 반갈 배치 로직 (유지)
+                        const isOdd = index % 2 === 1;
+                        itemDiv.className = `relative flex items-center justify-between md:justify-normal ${isOdd ? 'md:odd:flex-row-reverse' : ''} group is-active`;
+
+                        itemDiv.innerHTML = `
+                            <div class="flex items-center justify-center w-10 h-10 rounded-full border border-white bg-slate-300 group-[.is-active]:bg-emerald-500 text-slate-500 group-[.is-active]:text-emerald-50 shadow shrink-0 md:order-1 ${isOdd ? 'md:group-odd:-translate-x-1/2' : 'md:group-even:translate-x-1/2'}">
+                                <svg class="fill-current" xmlns="http://www.w3.org/2000/svg" width="12" height="10">
+                                    <path fill-rule="nonzero" d="M10.422 1.257 4.655 7.025 2.553 4.923A.916.916 0 0 0 1.257 6.22l2.75 2.75a.916.916 0 0 0 1.296 0l6.415-6.416a.916.916 0 0 0-1.296-1.296Z" />
+                                </svg>
+                            </div>
+                            <div class="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] bg-white p-4 rounded border border-slate-200 shadow">
+                                <div class="flex items-center justify-between space-x-2 mb-1">
+                                    <div class="font-bold text-slate-900" style="word-break: break-all;">
+                                        ❓ ${escapeHtml(log.question)}
+                                    </div>
+                                    <time class="text-xs font-medium text-indigo-500 shrink-0">${log.time || ''}</time>
+                                </div>
+                                <div class="text-slate-500 text-sm mt-2 pt-2 border-t border-dashed border-slate-100" style="white-space: pre-wrap; word-break: break-all;">
+                                    🤖 ${escapeHtml(log.answer)}
+                                </div>
+                            </div>
+                        `;
+
+                        container.appendChild(itemDiv);
+                        index++;
+                    }
+                }
+                
+                // 💫 스크롤 효과 유지
+                window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+            })
+            .catch(err => console.error("데이터 로딩 에러:", err));
+    }
+
+    // 🛡️ 해킹 방지 및 안전 변환 코드 (유지)
+    function escapeHtml(text) {
+        if (!text) return '';
+        return text
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    // 실행 인터벌: 최초 실행 후 2초마다 파이어베이스 새 전송 실시간 감지
+    loadTimelineData();
+    setInterval(loadTimelineData, 2000);
+</script>
+</body>
+</html>
+
+
