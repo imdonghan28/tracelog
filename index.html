@@ -43,7 +43,7 @@
                 const newDataKeys = Object.keys(data);
                 const newDataCount = newDataKeys.length;
 
-                // 💡 버그 해결 핵심: 데이터 개수가 이전과 같다면 화면을 다시 그리지 않고 스크롤도 하지 않음
+                // 데이터 개수가 이전과 같다면 화면을 다시 그리지 않고 스크롤도 하지 않음
                 if (newDataCount === currentLogCount) {
                     return;
                 }
@@ -57,17 +57,15 @@
                         const itemDiv = document.createElement('div');
                         itemDiv.className = "w-full";
 
+                        // HTML 템플릿 태그 안의 공백을 제거하고 왼쪽 정렬을 강화했습니다.
+                        // 이모지를 ❓ -> ⭕ (Q), 🤖 -> 🅰️ (A) 스타일로 변경했습니다.
                         itemDiv.innerHTML = `
                             <div class="w-full bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
                                 <div class="flex items-start justify-between space-x-4 mb-2">
-                                    <div class="font-bold text-slate-900 text-base text-left" style="word-break: break-all; flex: 1;">
-                                        ❓ ${escapeHtml(log.question)}
-                                    </div>
+                                    <div class="font-bold text-slate-900 text-base text-left" style="word-break: break-all; flex: 1;">⭕ ${escapeHtml(log.question).trim()}</div>
                                     <time class="text-xs font-medium text-indigo-500 shrink-0 pt-1">${log.time || ''}</time>
                                 </div>
-                                <div class="text-slate-600 text-sm mt-3 pt-3 border-t border-dashed border-slate-100 text-left" style="white-space: pre-wrap; word-break: break-all;">
-                                    🤖 ${escapeHtml(log.answer)}
-                                </div>
+                                <div class="text-slate-600 text-sm mt-3 pt-3 border-t border-dashed border-slate-100 text-left" style="white-space: pre-wrap; word-break: break-all;">🅰️ ${escapeHtml(log.answer).trim()}</div>
                             </div>
                         `;
 
@@ -75,7 +73,7 @@
                     }
                 }
                 
-                // 💫 데이터 개수가 늘어났을 때만 스크롤 효과 작동 (처음 로딩 시 + 새 로그 추가 시)
+                // 데이터 개수가 늘어났을 때만 스크롤 효과 작동 (처음 로딩 시 + 새 로그 추가 시)
                 if (newDataCount > currentLogCount) {
                     window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
                 }
