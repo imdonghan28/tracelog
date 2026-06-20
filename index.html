@@ -24,8 +24,10 @@
     // 우리 팀의 파이어베이스 서버 주소
     const firebaseDatabaseURL = "https://hackerthon-96e47-default-rtdb.firebaseio.com/logs.json";
     const container = document.getElementById('timelineContainer');
+    
+    // 직전 데이터의 개수를 기억해 둘 변수
+    let lastDataCount = 0;
 
-    // 🚀 가장 안전하고 확실하게 파이어베이스 데이터를 실시간으로 가져오는 엔진
     function loadTimelineData() {
         fetch(firebaseDatabaseURL)
             .then(res => res.json())
@@ -35,17 +37,25 @@
                     return;
                 }
 
-                // 화면을 한 번 비우고 정렬 시작
+                // 현재 파이어베이스에 쌓인 총 데이터 개수 계산
+                const currentDataCount = Object.keys(data).length;
+
+                // 1. 만약 이전과 데이터 개수가 완전히 똑같다면 화면을 다시 그리지 않고 통과!
+                // (이 덕분에 2초마다 마우스 스크롤이 아래로 튕기던 현상이 완전히 고쳐집니다.)
+                if (currentDataCount === lastDataCount) {
+                    return; 
+                }
+
+                // 2. 진짜 새 데이터가 들어왔을 때만 화면을 새로 그립니다.
                 container.innerHTML = '';
 
                 let index = 0;
-                // 파이어베이스 내부 데이터를 뽑아 화면에 카드 배치
                 for (const key in data) {
                     if (data.hasOwnProperty(key)) {
                         const log = data[key];
                         const itemDiv = document.createElement('div');
                         
-                        // 홀수/짝수 줄 좌우 반갈 배치 로직 (유지)
+                        // 홀수/짝수 줄 좌우 반갈 배치 로직
                         const isOdd = index % 2 === 1;
                         itemDiv.className = `relative flex items-center justify-between md:justify-normal ${isOdd ? 'md:odd:flex-row-reverse' : ''} group is-active`;
 
@@ -73,13 +83,16 @@
                     }
                 }
                 
-                // 💫 스크롤 효과 유지
+                // 3. 진짜 "새로운 대화가 세이브되었을 때만" 스크롤을 맨 아래로 내려줍니다!
                 window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                
+                // 현재 데이터 개수를 업데이트
+                lastDataCount = currentDataCount;
             })
             .catch(err => console.error("데이터 로딩 에러:", err));
     }
 
-    // 🛡️ 해킹 방지 및 안전 변환 코드 (유지)
+    // 보안 및 특수문자 안전 변환 함수
     function escapeHtml(text) {
         if (!text) return '';
         return text
@@ -90,11 +103,9 @@
             .replace(/'/g, "&#039;");
     }
 
-    // 실행 인터벌: 최초 실행 후 2초마다 파이어베이스 새 전송 실시간 감지
+    // 2초마다 파이어베이스 데이터 체킹
     loadTimelineData();
     setInterval(loadTimelineData, 2000);
 </script>
 </body>
 </html>
-
-
