@@ -39,7 +39,7 @@
             <div class="space-y-2">
                 <div class="text-xs font-extrabold text-slate-500 flex items-center gap-1">🔍 클릭하여 대화 필터링 (다중 선택 가능)</div>
                 <div id="searchTagPool" class="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-2">
-                    </div>
+                </div>
             </div>
 
             <div class="mt-3 pt-3 border-t border-slate-100 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs">
@@ -60,7 +60,7 @@
     <section class="w-full max-w-6xl mx-auto px-4 md:px-6 pt-64 pb-24">
         <div class="w-full max-w-4xl mx-auto">
             <div id="timelineContainer" class="space-y-4 relative">
-                </div>
+            </div>
         </div>
     </section>
 
@@ -68,28 +68,20 @@
     const firebaseDatabaseURL = "https://hackerthon-96e47-default-rtdb.firebaseio.com/logs.json";
     const container = document.getElementById('timelineContainer');
     
-    let allLogs = []; // 파이어베이스에서 가져온 원본 로그 리스트들 수집용
-    let selectedSearchTags = new Set(); // 유저가 선택한 검색 태그 저장소
+    let allLogs = []; // 원본 로그 캐시 리스트
+    let selectedSearchTags = new Set(); // 선택된 검색 태그 리스트
 
-    // 🎨 심사위원을 사로잡을 정교한 태그별 고유 컬러 맵 데이터
+    // 태그별 컬러 맵
     const tagColors = {
-        // 모델 1
         "ai 의존형": "bg-red-500 text-white", "ai 협업형": "bg-orange-500 text-white", "ai 참고형": "bg-yellow-500 text-slate-900",
-        // 모델 2
         "아이디어": "bg-purple-600 text-white", "개념, 이론 학습": "bg-blue-600 text-white", "실험 설계": "bg-emerald-600 text-white", "오류 해결": "bg-rose-600 text-white", "데이터 해석": "bg-cyan-600 text-white",
-        // 모델 3
         "컴퓨터 과학 및 AI": "bg-indigo-600 text-white", "자연과학 및 실험": "bg-teal-600 text-white", "인문, 사회 및 에세이": "bg-amber-600 text-white", "일반 대화, 기타": "bg-slate-500 text-white",
-        // 모델 4
         "Cognition": "bg-emerald-500 text-white", "Inference": "bg-cyan-500 text-white", "Judgment": "bg-sky-500 text-white", "Creation": "bg-indigo-500 text-white",
-        // 모델 5 & 6
         "1~50자": "bg-slate-300 text-slate-800", "51~200자": "bg-slate-400 text-white", "201~1000자": "bg-slate-500 text-white", "1001자 이상": "bg-slate-700 text-white",
-        // 모델 7 기본값들
         "일반 텍스트": "bg-zinc-500 text-white", "코드": "bg-violet-600 text-white", "시각화 자료(표, 그래프)": "bg-pink-600 text-white",
-        // 예외 공통
         "N/A": "bg-stone-300 text-stone-600"
     };
 
-    // 마스터 풀 초기화 (검색 대시보드에 뿌려질 모든 태그 목록 정리)
     const masterTagPool = [
         { cat: "model1", label: "ai 의존형" }, { cat: "model1", label: "ai 협업형" }, { cat: "model1", label: "ai 참고형" },
         { cat: "model2", label: "아이디어" }, { cat: "model2", label: "개념, 이론 학습" }, { cat: "model2", label: "실험 설계" }, { cat: "model2", label: "오류 해결" }, { cat: "model2", label: "데이터 해석" },
@@ -100,7 +92,6 @@
         { cat: "all", label: "N/A" }
     ];
 
-    // 🏁 초기 구동: 상단 검색 풀 버튼 그리기
     function initSearchDashboard() {
         const poolContainer = document.getElementById('searchTagPool');
         poolContainer.innerHTML = '';
@@ -115,7 +106,6 @@
         });
     }
 
-    // 🔍 검색창 태그 클릭 핸들러 (토글 방식 색상 피드백)
     function handleTagClick(button, tagLabel) {
         if (selectedSearchTags.has(tagLabel)) {
             selectedSearchTags.delete(tagLabel);
@@ -125,10 +115,9 @@
             const colorClass = tagColors[tagLabel] || "bg-indigo-600 text-white";
             button.className = `px-2.5 py-1 text-xs font-bold rounded-md ring-2 ring-offset-1 ring-slate-400 ${colorClass} cursor-pointer shadow-sm`;
         }
-        filterTimeline(); // 상태 바뀌면 즉시 실시간 필터링 엔진 가동
+        filterTimeline(); // 필터링 시에는 하단 스크롤 이동 없이 화면만 업데이트
     }
 
-    // 🚀 실시간 데이터 갱신 패치 레이어
     function loadTimelineData() {
         fetch(firebaseDatabaseURL)
             .then(res => res.json())
@@ -139,7 +128,6 @@
                     return;
                 }
 
-                // 가공하기 편하도록 오브젝트 리스트를 파싱하여 전역 캐시에 박아둠
                 const updatedLogs = [];
                 for (const key in data) {
                     if (data.hasOwnProperty(key)) {
@@ -147,12 +135,14 @@
                     }
                 }
 
-                // 새 데이터가 도착해서 개수가 달라졌을 때만 렌더링 리빌딩 작동
+                // 오직 실시간 데이터의 개수가 증가했을 때만 새 데이터를 받고 맨 아래로 스크롤
                 if (updatedLogs.length !== allLogs.length) {
                     const isFirstLoad = allLogs.length === 0;
                     allLogs = updatedLogs;
-                    filterTimeline(); // 화면 다시 그리기 규칙 호출
                     
+                    filterTimeline(); 
+                    
+                    // 새 로그 수신 시에만 스크롤 하단 이동 (최초 로드 제외)
                     if (!isFirstLoad) {
                         window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
                     }
@@ -161,33 +151,32 @@
             .catch(err => console.error("데이터 로딩 에러:", err));
     }
 
-    // ⚡ 핵심 기능 2: 다차원 AND/OR 알고리즘 탑재 필터 가동기
     function filterTimeline() {
         container.innerHTML = '';
-        
-        // 상단 라디오 버튼에서 AND/OR 설정값 획득
         const searchMode = document.querySelector('input[name="searchMode"]:checked').value;
 
-        // 필터링 필터링!
         const filtered = allLogs.filter(log => {
-            if (selectedSearchTags.size === 0) return true; // 아무것도 선택 안 했으면 전체 노출
+            if (selectedSearchTags.size === 0) return true;
 
-            // 쉼표로 연결된 모델7(answer_formats) 문자열을 배열로 파싱하여 대치
-            const currentCardTags = [
-                log.ai_dependency, log.research_stage, log.academic_domain, 
-                log.cognitive_process, log.answer_length, log.question_length
-            ];
-            if (log.answer_formats) {
-                log.answer_formats.split(",").forEach(f => currentCardTags.push(f.trim()));
-            }
+            // 🛠️ 고정 필드명 매핑 오류 해결: 어떤 키값으로 들어오든 내부에 적힌 텍스트 값을 모두 추출
+            const currentCardTags = [];
+            Object.keys(log).forEach(key => {
+                // 시간, 질문, 답변 본문을 제외한 태그 데이터 수집
+                if (key !== 'question' && key !== 'answer' && key !== 'time') {
+                    const val = String(log[key]);
+                    if (val.includes(",")) {
+                        val.split(",").forEach(f => currentCardTags.push(f.trim()));
+                    } else {
+                        currentCardTags.push(val.trim());
+                    }
+                }
+            });
 
             const searchArr = Array.from(selectedSearchTags);
 
             if (searchMode === "AND") {
-                // 선택한 검색 태그가 현재 카드의 태그 리스트에 '전부' 들어가 있어야 합격
                 return searchArr.every(tag => currentCardTags.includes(tag));
             } else {
-                // 선택한 검색 태그 중 '단 하나라도' 카드 태그 풀에 걸리면 합격
                 return searchArr.some(tag => currentCardTags.includes(tag));
             }
         });
@@ -197,15 +186,12 @@
             return;
         }
 
-        // 합격한 로그들만 이쁘게 카드 생성 후 화면 배치
         filtered.forEach(log => {
             const itemDiv = document.createElement('div');
             itemDiv.className = "w-full bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex flex-col md:flex-row gap-5 items-stretch transition hover:shadow-md";
 
-            // 🎨 우측 뱃지 스트링 조립기 (컬러코드 매핑 자동 적용)
             function makeBadge(value, category) {
                 if (!value) return '';
-                // 모델7 답변 형식처럼 컴마(,)가 섞여서 들어오는 다중 데이터 분할 처리
                 if (value.includes(",")) {
                     return value.split(",").map(val => {
                         const cleanVal = val.trim();
@@ -215,7 +201,15 @@
                 return `<span class="tag-badge px-2 py-1 text-[11px] font-bold rounded-md ${tagColors[value] || 'bg-slate-400 text-white'} shadow-2xs" data-cat="${category}">${value}</span>`;
             }
 
-            // 레이아웃 구조화: 왼쪽은 텍스트 영역(9), 오른쪽은 태그 정렬 영역(3) 비율 분할
+            // 정해진 표준 명칭 또는 model 번호 둘 다 안정적으로 작동하도록 포용적 처리
+            const model1 = log.model1 || log.ai_dependency;
+            const model2 = log.model2 || log.research_stage;
+            const model3 = log.model3 || log.academic_domain;
+            const model4 = log.model4 || log.cognitive_process;
+            const model5 = log.model5 || log.answer_length;
+            const model6 = log.model6 || log.question_length;
+            const model7 = log.model7 || log.answer_formats;
+
             itemDiv.innerHTML = `
                 <div class="flex-1 flex flex-col justify-between">
                     <div>
@@ -228,30 +222,27 @@
                 </div>
                 
                 <div class="w-full md:w-44 border-t md:border-t-0 md:border-l border-slate-100 pt-3 md:pt-0 md:pl-4 flex flex-row md:flex-col flex-wrap gap-1.5 content-start shrink-0">
-                    ${makeBadge(log.ai_dependency, 'model1')}
-                    ${makeBadge(log.research_stage, 'model2')}
-                    ${makeBadge(log.academic_domain, 'model3')}
-                    ${makeBadge(log.cognitive_process, 'model4')}
-                    ${makeBadge(log.answer_length, 'model5')}
-                    ${makeBadge(log.question_length, 'model6')}
-                    ${makeBadge(log.answer_formats, 'model7')}
+                    ${makeBadge(model1, 'model1')}
+                    ${makeBadge(model2, 'model2')}
+                    ${makeBadge(model3, 'model3')}
+                    ${makeBadge(model4, 'model4')}
+                    ${makeBadge(model5, 'model5')}
+                    ${makeBadge(model6, 'model6')}
+                    ${makeBadge(model7, 'model7')}
                 </div>
             `;
 
             container.appendChild(itemDiv);
         });
 
-        // 렌더링 직후 체크박스 상태에 맞춰 숨길 뱃지들 보이지 않게 세팅
         toggleTagDisplay();
     }
 
-    // ⚡ 핵심 기능 1: 체크박스 체크 여부에 따른 뱃지 노출/숨김 토글러
     function toggleTagDisplay() {
         const checkboxes = document.querySelectorAll('input[type="checkbox"]');
         checkboxes.forEach(box => {
             const category = box.value;
             const displayStyle = box.checked ? 'inline-block' : 'none';
-            // 특정 카테고리 태그 뱃지들 싹 다 찾아서 화면 스타일 스위칭
             const targetBadges = document.querySelectorAll(`.tag-badge[data-cat="${category}"]`);
             targetBadges.forEach(badge => {
                 badge.style.display = displayStyle;
@@ -266,11 +257,9 @@
             .replace(/"/g, "&quot;").replace(/'/g, "&#039;");
     }
 
-    // 마스터 구동
     initSearchDashboard();
     loadTimelineData();
     setInterval(loadTimelineData, 2000);
 </script>
 </body>
 </html>
-"수정"
