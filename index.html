@@ -13,13 +13,18 @@
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         html { scroll-behavior: smooth; }
+        
+        /* 접히고 펴지는 애니메이션을 위한 스타일 */
+        .transition-max-height {
+            transition: max-height 0.3s ease-in-out, opacity 0.2s ease-in-out, padding 0.3s ease-in-out;
+        }
     </style>
 </head>
 <body class="min-h-screen font-sans text-slate-800 relative">
 
-    <header class="w-full bg-white border-b border-slate-200 shadow-sm fixed top-0 left-0 z-50">
+    <header id="mainHeader" class="w-full bg-white border-b border-slate-200 shadow-sm fixed top-0 left-0 z-50">
         <div class="max-w-6xl mx-auto p-4 md:px-6">
-            <div class="flex flex-col md:flex-row md:items-center md:justify-between border-b border-slate-100 pb-3 mb-3 gap-3">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between border-b border-slate-100 pb-3 gap-3">
                 <h1 class="text-xl font-black text-indigo-600 tracking-tight flex items-center gap-2">
                     🎯 TraceLog <span class="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-bold">Smart Analysis</span>
                 </h1>
@@ -37,28 +42,36 @@
                 </div>
             </div>
 
-            <div class="space-y-2">
-                <div class="text-xs font-extrabold text-slate-500 flex items-center gap-1">🔍 클릭하여 대화 필터링 (다중 선택 가능)</div>
-                <div id="searchTagPool" class="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-2">
+            <div id="filterSection" class="transition-max-height overflow-hidden max-h-[500px] opacity-100 space-y-3 pt-2">
+                <div class="space-y-2">
+                    <div class="text-xs font-extrabold text-slate-500 flex items-center gap-1">🔍 클릭하여 대화 필터링 (다중 선택 가능)</div>
+                    <div id="searchTagPool" class="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-2">
+                    </div>
                 </div>
-            </div>
 
-            <div class="mt-3 pt-3 border-t border-slate-100 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs">
-                <div class="font-extrabold text-slate-500">👁️ 카드 우측에 표시할 태그 카테고리 설정:</div>
-                <div class="flex flex-wrap gap-3 font-semibold text-slate-600">
-                    <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" checked value="model1" onchange="toggleTagDisplay()" class="accent-indigo-600"> 의존도</label>
-                    <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" checked value="model2" onchange="toggleTagDisplay()" class="accent-indigo-600"> 탐구단계</label>
-                    <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" checked value="model3" onchange="toggleTagDisplay()" class="accent-indigo-600"> 대화분야</label>
-                    <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" checked value="model4" onchange="toggleTagDisplay()" class="accent-indigo-600"> 사고단계</label>
-                    <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" checked value="model5" onchange="toggleTagDisplay()" class="accent-indigo-600"> 답변길이</label>
-                    <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" checked value="model6" onchange="toggleTagDisplay()" class="accent-indigo-600"> 질문길이</label>
-                    <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" checked value="model7" onchange="toggleTagDisplay()" class="accent-indigo-600"> 답변형식</label>
+                <div class="pt-2 border-t border-slate-100 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs">
+                    <div class="font-extrabold text-slate-500">👁️ 카드 우측에 표시할 태그 카테고리 설정:</div>
+                    <div class="flex flex-wrap gap-3 font-semibold text-slate-600">
+                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" checked value="model1" onchange="toggleTagDisplay()" class="accent-indigo-600"> 의존도</label>
+                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" checked value="model2" onchange="toggleTagDisplay()" class="accent-indigo-600"> 탐구단계</label>
+                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" checked value="model3" onchange="toggleTagDisplay()" class="accent-indigo-600"> 대화분야</label>
+                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" checked value="model4" onchange="toggleTagDisplay()" class="accent-indigo-600"> 사고단계</label>
+                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" checked value="model5" onchange="toggleTagDisplay()" class="accent-indigo-600"> 답변길이</label>
+                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" checked value="model6" onchange="toggleTagDisplay()" class="accent-indigo-600"> 질문길이</label>
+                        <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" checked value="model7" onchange="toggleTagDisplay()" class="accent-indigo-600"> 답변형식</label>
+                    </div>
                 </div>
             </div>
         </div>
+
+        <div class="w-full flex justify-center border-t border-slate-100 bg-slate-50">
+            <button onclick="toggleFilterSection()" id="toggleFilterBtn" class="px-6 py-1 text-[11px] font-black text-slate-500 hover:text-indigo-600 transition flex items-center gap-1 cursor-pointer select-none">
+                상단 필터 접기 ▲
+            </button>
+        </div>
     </header>
 
-    <section class="w-full max-w-6xl mx-auto px-4 md:px-6 pt-64 pb-24">
+    <section id="mainContentSection" class="w-full max-w-6xl mx-auto px-4 md:px-6 pt-[260px] pb-24">
         <div class="w-full max-w-4xl mx-auto">
             <div id="timelineContainer" class="space-y-4 relative">
             </div>
@@ -117,7 +130,6 @@
     </div>
 
 <script>
-    // 💡 주소 체계를 명확히 구분하여 엔드포인트 버그 방지
     const firebaseProjectURL = "https://hackerthon-96e47-default-rtdb.firebaseio.com";
     const firebaseDatabaseURL = `${firebaseProjectURL}/logs.json`;
     const container = document.getElementById('timelineContainer');
@@ -125,7 +137,8 @@
     let allLogs = []; 
     let selectedSearchTags = new Set(); 
     let targetDeleteKeys = []; 
-    let isDeleting = false; // 삭제 중 실시간 폴링으로 꼬이는 현상 방지 플래그
+    let isDeleting = false;
+    let isFilterExpanded = true; // 현재 필터 패널 열림/닫힘 상태 값
 
     const tagColors = {
         "ai 의존형": "bg-red-500 text-white", "ai 협업형": "bg-orange-500 text-white", "ai 참고형": "bg-yellow-500 text-slate-900",
@@ -147,6 +160,41 @@
         { cat: "all", label: "N/A" }
     ];
 
+    // ↕️ 헤더 높이에 맞추어 본문 콘텐츠의 상단 여백을 동적으로 수정해주는 레이아웃 보정 함수
+    function adjustSectionPadding() {
+        const headerElement = document.getElementById('mainHeader');
+        const contentSection = document.getElementById('mainContentSection');
+        if (headerElement && contentSection) {
+            const headerHeight = headerElement.offsetHeight;
+            contentSection.style.paddingTop = `${headerHeight + 24}px`;
+        }
+    }
+
+    // ↕️ 필터 열고 닫기 토글 스위치 함수
+    function toggleFilterSection() {
+        const filterSection = document.getElementById('filterSection');
+        const toggleBtn = document.getElementById('toggleFilterBtn');
+        
+        if (isFilterExpanded) {
+            // 접기 모드 진입
+            filterSection.style.maxHeight = '0px';
+            filterSection.style.opacity = '0';
+            filterSection.style.paddingTop = '0px';
+            toggleBtn.innerText = '상단 필터 펼치기 ▼';
+            isFilterExpanded = false;
+        } else {
+            // 펼치기 모드 진입
+            filterSection.style.maxHeight = '500px';
+            filterSection.style.opacity = '1';
+            filterSection.style.paddingTop = '8px';
+            toggleBtn.innerText = '상단 필터 접기 ▲';
+            isFilterExpanded = true;
+        }
+        
+        // 애니메이션(0.3초) 종료 후 늘어난 헤더 사이즈에 맞춰 여백 재조정
+        setTimeout(adjustSectionPadding, 310);
+    }
+
     function normalizeTag(tagStr) {
         if (!tagStr) return "N/A";
         return tagStr.replace(/모델\d+\s*결과:\s*/g, "").trim();
@@ -164,6 +212,10 @@
             btn.onclick = () => handleTagClick(btn, tag.label);
             poolContainer.appendChild(btn);
         });
+        
+        // 초기화 완료 후 한번 여백 높이 보정 실행
+        setTimeout(adjustSectionPadding, 100);
+        window.addEventListener('resize', adjustSectionPadding);
     }
 
     function handleTagClick(button, tagLabel) {
@@ -179,7 +231,7 @@
     }
 
     function loadTimelineData() {
-        if (isDeleting) return; // 삭제 진행중엔 로딩을 일시 정지시킵니다.
+        if (isDeleting) return;
 
         fetch(firebaseDatabaseURL)
             .then(res => res.json())
@@ -297,6 +349,9 @@
 
         toggleTagDisplay();
         scrollToBottom();
+        
+        // 리스트 필터 갱신될 때 헤더 패딩 한번 더 동적 조정
+        setTimeout(adjustSectionPadding, 50);
     }
 
     function toggleTagDisplay() {
@@ -311,7 +366,6 @@
         });
     }
 
-    // 🚀 모달 및 삭제 엔진 기능 
     function openDeleteModal() {
         if (allLogs.length === 0) {
             alert("삭제할 대화 기록이 존재하지 않습니다.");
@@ -357,12 +411,10 @@
         isDeleting = false;
     }
 
-    // 💡 [수정] REST API URL 규칙 오류 완전 수정 (`/logs/키값.json`)
     function executeDelete() {
         if (targetDeleteKeys.length === 0) return;
-        isDeleting = true; // 폴링 일시 차단
+        isDeleting = true;
 
-        // 정확한 파이어베이스 개별 엔드포인트 형식으로 매핑
         const deletePromises = targetDeleteKeys.map(key => {
             return fetch(`${firebaseProjectURL}/logs/${key}.json`, { method: 'DELETE' });
         });
@@ -371,7 +423,7 @@
             .then(() => {
                 alert("선택하신 대화 기록 범위가 안전하게 일괄 삭제되었습니다.");
                 closeFinalModal();
-                allLogs = []; // 캐시 초기화 후 재로딩 유도
+                allLogs = []; 
                 loadTimelineData();
             })
             .catch(err => {
