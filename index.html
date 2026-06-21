@@ -1,3 +1,15 @@
+필터링 상태가 바뀔 때 복잡하게 스크롤 위치를 계산하는 대신, 요청하신 대로 **필터를 켰다 끌 때 무조건 맨 아래(최신 대화)로 스크롤을 이동**하도록 단순화했습니다.
+
+추가로 화면 오른쪽 아래에 언제든 스크롤을 제어할 수 있는 **[맨 위로(▲) / 맨 아래로(▼)] 플로팅 버튼 2개**를 깔끔하게 제작하여 반영했습니다.
+
+### 🛠️ 주요 수정 사항
+
+1. **필터 조작 시 맨 아래로 고정**: 태그를 클릭하거나 해제할 때 `window.scrollTo`를 사용해 즉시 맨 아래로 부드럽게 내려가도록 통합했습니다.
+2. **퀵 스크롤 버튼 추가**: 화면 우측 하단(`fixed bottom-6 right-6`)에 고정된 두 개의 버튼을 배치하여 사용자가 언제든 최상단과 최하단으로 빠르게 이동할 수 있게 했습니다.
+
+### 💻 변경된 전체 소스 코드
+
+```html
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -12,6 +24,7 @@
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        html { scroll-behavior: smooth; }
     </style>
 </head>
 <body class="min-h-screen font-sans text-slate-800">
@@ -26,11 +39,11 @@
                 <div class="flex items-center gap-4 bg-slate-100 p-1 rounded-lg text-xs font-bold self-start md:self-auto">
                     <span class="pl-2 text-slate-500">검색 조건 방식:</span>
                     <label class="flex items-center gap-1 cursor-pointer">
-                        <input type="radio" name="searchMode" value="AND" checked onchange="filterTimeline(true)" class="accent-indigo-600"> 
+                        <input type="radio" name="searchMode" value="AND" checked onchange="filterTimeline()" class="accent-indigo-600"> 
                         <span class="bg-white px-2 py-1 rounded shadow-sm text-indigo-600">모두 만족 (AND)</span>
                     </label>
                     <label class="flex items-center gap-1 cursor-pointer">
-                        <input type="radio" name="searchMode" value="OR" onchange="filterTimeline(true)" class="accent-indigo-600"> 
+                        <input type="radio" name="searchMode" value="OR" onchange="filterTimeline()" class="accent-indigo-600"> 
                         <span class="bg-white px-2 py-1 rounded shadow-sm text-emerald-600">하나라도 만족 (OR)</span>
                     </label>
                 </div>
@@ -63,6 +76,15 @@
             </div>
         </div>
     </section>
+
+    <div class="fixed bottom-6 right-6 flex flex-col gap-2 z-50">
+        <button onclick="scrollToTop()" title="맨 위로" class="w-10 h-10 bg-indigo-600 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-indigo-700 transition cursor-pointer font-bold text-sm">
+            ▲
+        </button>
+        <button onclick="scrollToBottom()" title="맨 아래로" class="w-10 h-10 bg-indigo-600 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-indigo-700 transition cursor-pointer font-bold text-sm">
+            ▼
+        </button>
+    </div>
 
 <script>
     const firebaseDatabaseURL = "https://hackerthon-96e47-default-rtdb.firebaseio.com/logs.json";
@@ -114,8 +136,7 @@
             const colorClass = tagColors[tagLabel] || "bg-indigo-600 text-white";
             button.className = `px-2.5 py-1 text-xs font-bold rounded-md ring-2 ring-offset-1 ring-slate-400 ${colorClass} cursor-pointer shadow-sm`;
         }
-        // 💡 중요: 유저가 수동으로 태그를 누르거나 취소할 때는 현재 스크롤 유지를 참(true)으로 전달
-        filterTimeline(true); 
+        filterTimeline(); 
     }
 
     function loadTimelineData() {
@@ -136,25 +157,14 @@
                 }
 
                 if (updatedLogs.length !== allLogs.length) {
-                    const isFirstLoad = allLogs.length === 0;
                     allLogs = updatedLogs;
-                    
-                    // 실시간 폴링 데이터로 그릴 때는 스크롤 위치를 고정하지 않음(false)
-                    filterTimeline(false); 
-                    
-                    if (!isFirstLoad) {
-                        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-                    }
+                    filterTimeline(); 
                 }
             })
             .catch(err => console.error("데이터 로딩 에러:", err));
     }
 
-    // parameter `keepScroll`이 true 이면 현재 위치를 유지합니다.
-    function filterTimeline(keepScroll = false) {
-        // 💡 [해결] 필터 변경 전 브라우저의 Y축 스크롤 위치를 미리 기억
-        const currentScrollPos = window.scrollY;
-
+    function filterTimeline() {
         container.innerHTML = '';
         const searchMode = document.querySelector('input[name="searchMode"]:checked').value;
 
@@ -237,10 +247,8 @@
 
         toggleTagDisplay();
 
-        // 💡 [해결] 태그 작동 전후 유지가 필요한 모드(keepScroll이 true)라면 기억한 위치로 복구
-        if (keepScroll) {
-            window.scrollTo(0, currentScrollPos);
-        }
+        // 💡 필터 조건이 세팅되거나 해제될 때 무조건 맨 아래로 스크롤 이동
+        scrollToBottom();
     }
 
     function toggleTagDisplay() {
@@ -253,6 +261,15 @@
                 badge.style.display = displayStyle;
             });
         });
+    }
+
+    // 🚀 스크롤 제어 함수들
+    function scrollToTop() {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function scrollToBottom() {
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
     }
 
     function escapeHtml(text) {
@@ -268,3 +285,5 @@
 </script>
 </body>
 </html>
+
+```
