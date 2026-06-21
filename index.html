@@ -1,15 +1,3 @@
-필터링 상태가 바뀔 때 복잡하게 스크롤 위치를 계산하는 대신, 요청하신 대로 **필터를 켰다 끌 때 무조건 맨 아래(최신 대화)로 스크롤을 이동**하도록 단순화했습니다.
-
-추가로 화면 오른쪽 아래에 언제든 스크롤을 제어할 수 있는 **[맨 위로(▲) / 맨 아래로(▼)] 플로팅 버튼 2개**를 깔끔하게 제작하여 반영했습니다.
-
-### 🛠️ 주요 수정 사항
-
-1. **필터 조작 시 맨 아래로 고정**: 태그를 클릭하거나 해제할 때 `window.scrollTo`를 사용해 즉시 맨 아래로 부드럽게 내려가도록 통합했습니다.
-2. **퀵 스크롤 버튼 추가**: 화면 우측 하단(`fixed bottom-6 right-6`)에 고정된 두 개의 버튼을 배치하여 사용자가 언제든 최상단과 최하단으로 빠르게 이동할 수 있게 했습니다.
-
-### 💻 변경된 전체 소스 코드
-
-```html
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -113,6 +101,13 @@
         { cat: "all", label: "N/A" }
     ];
 
+    // 🛠️ 접두사 접미사를 떼고 원본 키워드만 추출해 매핑 버그를 없애주는 정규화 엔진
+    function normalizeTag(tagStr) {
+        if (!tagStr) return "N/A";
+        // '모델1 결과: ai 의존형' 같은 문자열에서 알맹이만 추출
+        return tagStr.replace(/모델\d+\s*결과:\s*/g, "").trim();
+    }
+
     function initSearchDashboard() {
         const poolContainer = document.getElementById('searchTagPool');
         poolContainer.innerHTML = '';
@@ -176,9 +171,9 @@
                 if (key !== 'question' && key !== 'answer' && key !== 'time') {
                     const val = String(log[key]);
                     if (val.includes(",")) {
-                        val.split(",").forEach(f => currentCardTags.push(f.trim()));
+                        val.split(",").forEach(f => currentCardTags.push(normalizeTag(f)));
                     } else {
-                        currentCardTags.push(val.trim());
+                        currentCardTags.push(normalizeTag(val));
                     }
                 }
             });
@@ -201,15 +196,31 @@
             const itemDiv = document.createElement('div');
             itemDiv.className = "w-full bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex flex-col md:flex-row gap-5 items-stretch transition hover:shadow-md";
 
+            // 🎨 뱃지 텍스트 가공 및 질문/답변 글자 수 구분 추가
             function makeBadge(value, category) {
                 if (!value) return '';
+                
+                // 컴마 분할 처리
                 if (value.includes(",")) {
                     return value.split(",").map(val => {
-                        const cleanVal = val.trim();
-                        return `<span class="tag-badge px-2 py-1 text-[11px] font-bold rounded-md ${tagColors[cleanVal] || 'bg-slate-400 text-white'} shadow-2xs" data-cat="${category}">${cleanVal}</span>`;
+                        const cleanVal = normalizeTag(val);
+                        let displayText = cleanVal;
+                        
+                        // 카테고리에 따라 질문/답변 표시 명시하기
+                        if (category === 'model5') displayText = `[답변] ${cleanVal}`;
+                        if (category === 'model6') displayText = `[질문] ${cleanVal}`;
+
+                        return `<span class="tag-badge px-2 py-1 text-[11px] font-bold rounded-md ${tagColors[cleanVal] || 'bg-slate-400 text-white'} shadow-2xs" data-cat="${category}">${displayText}</span>`;
                     }).join('');
                 }
-                return `<span class="tag-badge px-2 py-1 text-[11px] font-bold rounded-md ${tagColors[value] || 'bg-slate-400 text-white'} shadow-2xs" data-cat="${category}">${value}</span>`;
+                
+                const cleanVal = normalizeTag(value);
+                let displayText = cleanVal;
+                
+                if (category === 'model5') displayText = `[답변] ${cleanVal}`;
+                if (category === 'model6') displayText = `[질문] ${cleanVal}`;
+
+                return `<span class="tag-badge px-2 py-1 text-[11px] font-bold rounded-md ${tagColors[cleanVal] || 'bg-slate-400 text-white'} shadow-2xs" data-cat="${category}">${displayText}</span>`;
             }
 
             const model1 = log.model1 || log.ai_dependency;
@@ -247,7 +258,7 @@
 
         toggleTagDisplay();
 
-        // 💡 필터 조건이 세팅되거나 해제될 때 무조건 맨 아래로 스크롤 이동
+        // 필터 변경 시 무조건 부드럽게 맨 아래로 이동
         scrollToBottom();
     }
 
@@ -263,7 +274,6 @@
         });
     }
 
-    // 🚀 스크롤 제어 함수들
     function scrollToTop() {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -285,5 +295,3 @@
 </script>
 </body>
 </html>
-
-```
