@@ -115,12 +115,22 @@
         { cat: "all", label: "N/A" }
     ];
 
-    // 💡 [핵심 추가] 데이터 내 불필요한 "모델X 결과:" 텍스트 및 괄호 중복 파편들을 완전히 도려내는 전처리 함수
+    // 💡 [안전 보완형 전처리] 데이터가 꼬여서 들어와도 핵심 키워드 매칭을 통해 완벽하게 필터링 및 렌더링을 보장하는 함수
     function normalizeTag(tagStr) {
         if (!tagStr) return "N/A";
-        // '모델1 결과:', '모델2 결과:' 문구 삭제 및 괄호 파편 정리
+        
+        const text = String(tagStr).toLowerCase();
+        
+        // 마스터 풀에 등록된 키워드가 포함되어 있는지 하나씩 검사하여 일치하는 실속 알맹이만 반환
+        for (const item of masterTagPool) {
+            if (text.includes(item.label.toLowerCase())) {
+                return item.label; 
+            }
+        }
+        
+        // 만약 매칭되는 핵심어가 없으면 불필요한 수식어만 걷어내고 원본 유지
         let clean = tagStr.replace(/모델\d+\s*결과\s*\(?:\s*/g, "").replace(/모델\d+\s*결과:\s*/g, "");
-        clean = clean.replace(/\)/g, "").trim(); 
+        clean = clean.replace(/[\(\)]/g, "").trim();
         return clean || "N/A";
     }
 
@@ -241,7 +251,6 @@
             const itemDiv = document.createElement('div');
             itemDiv.className = "w-full bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex flex-col md:flex-row gap-5 items-stretch transition hover:shadow-md";
 
-            // 배지를 렌더링할 때도 텍스트 오염을 제거하도록 예외처리 강화
             function makeBadge(value, category) {
                 if (!value) return '';
                 if (value.includes(",")) {
